@@ -1,5 +1,5 @@
 import { Message } from '../types';
-import { createImageMessage, modelSupportsVision } from './imagehandling';
+import { createImageMessage } from './imagehandling';
 
 // Enhanced Groq API integration with vision support - Fixed for proper image format
 const getGroqCompletion = async (
@@ -99,11 +99,10 @@ const getGroqCompletion = async (
   }
 };
 
-// Ollama API integration
+// Ollama API integration - removed image handling code
 const getOllamaCompletion = async (
   messages: Message[], 
-  model: string = 'gemma3:4b-it-q4_K_M',
-  imageData?: string[]
+  model: string = 'gemma3:4b-it-q4_K_M'
 ): Promise<string> => {
   try {
     console.log(`Calling Ollama API with model: ${model}`);
@@ -144,54 +143,26 @@ const getOllamaCompletion = async (
       throw new Error(`Ollama server not available or not running at http://localhost:11434. Please make sure Ollama is installed and running.`);
     }
     
-    // Check if we're dealing with a model that supports vision
-    const hasVisionSupport = modelSupportsVision(model);
-    console.log(`Model ${model} supports vision: ${hasVisionSupport}`);
-    
-    // Clean up the messages format for Ollama
+    // Clean up the messages format for Ollama - text only
     const recentMessages = messages.slice(-10); // Only use the last 10 messages
     
-    // If the model supports vision and we have image data, use a different format
-    let requestBody: any = {};
+    // Standard text-only format
+    const cleanedMessages = recentMessages.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content
+    }));
     
-    if (hasVisionSupport && imageData && imageData.length > 0) {
-      // The last message will be converted to include images
-      const lastMessage = recentMessages[recentMessages.length - 1];
-      const otherMessages = recentMessages.slice(0, -1).map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content
-      }));
-      
-      // Create a special message with images
-      const imageMessage = createImageMessage(lastMessage.content, imageData);
-      
-      requestBody = {
-        model: model,
-        messages: [...otherMessages, imageMessage],
-        stream: false
-      };
-      
-      console.log('Using vision format for Ollama request');
-    } else {
-      // Standard text-only format
-      const cleanedMessages = recentMessages.map(msg => ({
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
-        content: msg.content
-      }));
-      
-      requestBody = {
-        model: model,
-        messages: cleanedMessages,
-        stream: false
-      };
-    }
+    const requestBody = {
+      model: model,
+      messages: cleanedMessages,
+      stream: false
+    };
     
     // Log the actual request for debugging
     console.log('Sending request to Ollama:', {
       endpoint: 'http://localhost:11434/api/chat',
       model: model,
-      messageCount: requestBody.messages.length,
-      hasImages: hasVisionSupport && imageData && imageData.length > 0
+      messageCount: requestBody.messages.length
     });
     
     const response = await fetch('http://localhost:11434/api/chat', {

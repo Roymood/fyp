@@ -33,7 +33,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const subscriptionRef = useRef<any>(null);
   const [queuedImages, setQueuedImages] = useState<string[]>([]);
-  const [ollamaSupportsVision, setOllamaSupportsVision] = useState(false);
   const [groqSupportsVision, setGroqSupportsVision] = useState(true); // Default to true for Groq
 
   // Check if Ollama is running
@@ -419,11 +418,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId }) => {
           // Use Ollama (offline mode)
           console.log('Using Ollama in offline mode with model:', ollamaModel);
           try {
-            // Pass images if we have them and in offline mode with vision support
+            // Images are never passed to Ollama
             aiResponse = await getOllamaCompletion(
               processedMessages, 
-              ollamaModel, 
-              images // Pass images directly
+              ollamaModel
             );
             modelName = `ollama-${ollamaModel}`;
           } catch (ollamaError: any) {
@@ -559,13 +557,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatId }) => {
     setIsTTSEnabled(!isTTSEnabled);
   };
 
-  // Determine if image uploads should be enabled
+  // Determine if image uploads should be enabled - simplified to only allow in online mode
   const shouldEnableImageUpload = () => {
-    if (mode === 'online') {
-      return groqSupportsVision;
-    } else {
-      return ollamaSupportsVision;
-    }
+    return mode === 'online' && groqSupportsVision;
   };
 
   return (

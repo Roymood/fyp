@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ImageUploader from './imageuploader';
-import { modelSupportsVision } from '../../utils/imagehandling';
 
 interface MessageInputProps {
   onSendMessage: (message: string, images?: string[]) => void;
